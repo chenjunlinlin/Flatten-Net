@@ -4,7 +4,7 @@
 # tongzhan@smail.nju.edu.cn
 
 import os
-ROOT_DATASET = '/raid5/chenjunlin/code/flatten-net/dataset' 
+ROOT_DATASET = "" 
 
 def return_ucf101(modality):
     filename_categories = 101
@@ -26,9 +26,9 @@ def return_ucf101(modality):
 def return_hmdb51(modality):
     filename_categories = 51
     if modality == 'RGB':
-        root_data = "HMDB51/video_imgs/"
-        filename_imglist_train = "HMDB51/train.csv"
-        filename_imglist_val = "HMDB51/test.csv"
+        root_data = ""
+        filename_imglist_train = "./dataset/HMDB51/train.csv"
+        filename_imglist_val = "./dataset/HMDB51/test.csv"
         prefix = 'image_{:05d}.jpg'
     elif modality == 'Flow':
         root_data = ROOT_DATASET + 'HMDB51/images'

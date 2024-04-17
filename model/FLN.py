@@ -3,13 +3,14 @@ from torch import nn
 from utils.transforms import *
 from torch.nn.init import normal_, constant_
 from .resnet import get_resnet_model
+from .build_model import get_swin
 
 
 class FLN(nn.Module):
     def __init__(self, num_class, num_segments, modality,
                  base_model='resnet50', new_length=1, before_softmax=True, print_spec=True,
                  dropout=0.8, img_feature_dim=256, crop_num=1,
-                 pretrain=True):
+                 pretrain=True, logger=None):
         super(FLN, self).__init__()
         self.num_classes = num_class
         self.modality = modality
@@ -18,12 +19,14 @@ class FLN(nn.Module):
         self.before_softmax = before_softmax
         self.dropout = dropout
         self.crop_num = crop_num
+        self.img_feature_dim = img_feature_dim
         # the dimension of the CNN feature to represent each frame
         self.img_feature_dim = img_feature_dim
         self.pretrain = pretrain
         self.base_model_name = base_model
         self.target_transforms = {86: 87, 87: 86,
                                   93: 94, 94: 93, 166: 167, 167: 166}
+        self.first_layer = nn.Conv2d(3, 3, 7, stride=2, padding=3)
 
         if new_length is None:
             self.new_length = 1 if modality == "RGB" else 5
@@ -40,13 +43,12 @@ class FLN(nn.Module):
         img_feature_dim:    {}
             """.format(base_model, self.modality, self.num_segments, self.new_length, self.dropout, self.img_feature_dim)))
 
-        self._prepare_base_model(base_model, self.num_segments)
+        self._prepare_base_model(base_model, self.num_segments, logger)
 
-    def _prepare_base_model(self, base_model, num_segments):
+    def _prepare_base_model(self, base_model, num_segments, logger):
         print(('=> base model: {}'.format(base_model)))
         if 'resnet' in base_model:
-            self.base_model = get_resnet_model(
-                num_classes=self.num_classes, pretrained=self.pretrain, progress=True, model_name=self.base_model_name)
+            self.base_model = self._get_model(model_name=self.base_model_name, logger=logger)
             self.base_model.last_layer_name = 'fc'
             self.input_size = [336, 224]  # w * h
             self.input_mean = [0.485, 0.456, 0.406]
@@ -54,7 +56,18 @@ class FLN(nn.Module):
         else:
             raise ValueError('Unknown base model: {}'.format(base_model))
 
+    def _get_model(self, model_name='resnet50', logger=None):
+        if 'swin' in model_name:
+            model = get_swin(
+                img_size=self.img_feature_dim, num_classes=self.num_classes, logger=logger)
+        else:
+            model = get_resnet_model(
+                num_classes=self.num_classes, pretrained=self.pretrain, progress=True, model_name=self.base_model_name)
+        return model
+
     def forward(self, input):
+
+        input = self.first_layer(input)
 
         base_out = self.base_model(input)
 
@@ -68,7 +81,7 @@ class FLN(nn.Module):
 
     @property
     def scale_size(self):
-        scale_size = [self.input_size[i]*256//224 for i in 
+        scale_size = [self.input_size[i]*256//224 for i in
                       range(len(self.input_size))]
         return scale_size
 

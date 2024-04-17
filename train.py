@@ -30,7 +30,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+os.environ['CUDA_VISIBLE_DEVICES'] = "0,1"
 
 
 best_prec1 = 0
@@ -69,7 +69,9 @@ def main():
                 args.modality,
                 base_model=args.arch,
                 dropout=args.dropout,
-                pretrain=args.pretrain)
+                img_feature_dim = args.img_feature_dim,
+                pretrain=args.pretrain,
+                logger=logger)
     
     if dist.get_rank() == 0:
         init_wandb(args.store_name, cfg=args)
@@ -336,7 +338,7 @@ def validate(val_loader, model, criterion, logger=None):
             batch_time.update(time.time() - end)
             end = time.time()
 
-            if i % args.print_freq == 0:
+            if i % args.print_freq == 0 or i == len(val_loader):
                 logger.info(
                     ('Test: [{0}/{1}]\t'
                      'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'

@@ -7,6 +7,7 @@ import math
 import torch
 from torchvision import transforms
 from einops import rearrange
+from script.process_video import mkdir_p
 
 
 class GroupRandomCrop(object):
@@ -365,9 +366,10 @@ class Flatten(object):
         to_pil_img = transforms.ToPILImage()
         img = to_pil_img(img_group[0])
         imgs = to_pil_img(flat_images)
-        ind = int(random.random()*10)%3
-        imgs.save(f"/raid5/chenjunlin/code/flatten-net/examples/fla_img_{ind}.png")
-        img.save(f"/raid5/chenjunlin/code/flatten-net/examples/singal_{ind}.png")
+        ind = int(random.random()*100)%30
+        mkdir_p("./examples")
+        imgs.save(f"./examples/fla_img_{ind}.png")
+        img.save(f"./examples/singal_{ind}.png")
 
 
         return flat_images, label

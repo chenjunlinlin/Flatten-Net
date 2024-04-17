@@ -14,13 +14,13 @@ parser.add_argument('--root_path', type=str, default="")
 parser.add_argument('--store_name', type=str, default="")
 # ========================= Model Configs ==========================
 parser.add_argument('--arch', type=str, default="resnet50")
-parser.add_argument('--num_segments', type=int, default=1)
+parser.add_argument('--num_segments', type=int, default=6)
 parser.add_argument('--consensus_type', type=str, default='avg')
 parser.add_argument('--k', type=int, default=3)
 parser.add_argument('--dropout', default=0.5, type=float, metavar='DO',
                     help='dropout ratio (default: 0.5)')
 parser.add_argument('--loss_type', type=str, default="nll", choices=['nll'])
-parser.add_argument('--img_feature_dim', default=336, type=int,
+parser.add_argument('--img_feature_dim', default=448, type=int,
                     help="the feature dimension for each frame")
 parser.add_argument('--suffix', type=str, default=None)
 parser.add_argument('--pretrain', type=bool, default=False)
@@ -30,7 +30,7 @@ parser.add_argument('--experiment_name', type=str, default='FLN')
 # ========================= Learning Configs ==========================
 parser.add_argument('--epochs', default=1000, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('-b', '--batch-size', default=96, type=int, metavar='N',
+parser.add_argument('-b', '--batch-size', default=256, type=int, metavar='N',
                     help='mini-batch size (default: 256)')
 parser.add_argument('--lr_scheduler', type=str, default='reduce')
 parser.add_argument('--warmup_epoch', type=int, default=0)
@@ -42,7 +42,7 @@ parser.add_argument('--lr_steps', default=[25, 75, 175, 250, 300, 400 ], type=fl
                     help='epochs to decay learning rate by 10')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
-parser.add_argument('--weight-decay', '--wd', default=5e-4, type=float, metavar='W',
+parser.add_argument('--weight-decay', '--wd', default=5e-3, type=float, metavar='W',
                     help='weight decay (default: 5e-4)')
 parser.add_argument('--clip-gradient', '--gd', default=None, type=float, metavar='W',
                     help='gradient norm clipping (default: disabled)')
@@ -53,7 +53,7 @@ parser.add_argument('--print-freq', '-p', default=20, type=int, metavar='N',
 parser.add_argument('--eval-freq', default=5, type=int, metavar='N',
                     help='evaluation frequency (default: 5)')
 # ========================= Runtime Configs ==========================
-parser.add_argument('-j', '--workers', default=10, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=3, type=int, metavar='N',
                     help='number of data loading workers (default: 8)')
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
