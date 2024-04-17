@@ -149,6 +149,10 @@ class TSNDataSet(data.Dataset):
                 offsets = np.array([int(tick / 2.0 + tick * x) for x in range(self.num_segments)])
             else:
                 offsets = np.zeros((self.num_segments,))
+            
+            if self.num_segments == 1:
+                offsets = np.repeat(offsets, repeats=6, axis=0)
+
             return offsets + 1
 
     def __getitem__(self, index):
