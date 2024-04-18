@@ -121,6 +121,7 @@ def main():
         modality=args.modality,
         image_tmpl=prefix,
         random_shift=False,
+        test_mode=True,
         transform=torchvision.transforms.Compose([
             GroupScale(scale_size), GroupCenterCrop(crop_size),
             ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim,args.img_feature_dim])]),
@@ -199,17 +200,7 @@ def main():
             is_best = prec1 > best_prec1
             best_prec1 = prec1
             logger.info(("Best Prec@1: '{}'".format(best_prec1)))
-            save_epoch = args.start_epoch + 1
-            save_checkpoint(
-                {
-                    'epoch': args.start_epoch + 1,
-                    'arch': args.arch,
-                    'state_dict': model.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                    'scheduler': scheduler.state_dict(),
-                    'prec1': prec1,
-                    'best_prec1': best_prec1,
-                }, save_epoch, is_best)
+
         return
 
     for epoch in range(args.start_epoch, args.epochs):
@@ -296,7 +287,7 @@ def train(train_loader, model, criterion, optimizer, epoch, logger=None, schedul
         batch_time.update(time.time() - end)
         end = time.time()
         
-        if i % args.print_freq == 0:
+        if (i % args.print_freq == 0 and i != 0) or i == len(train_loader)-1:
             logger.info(('Epoch: [{0}][{1}/{2}], lr: {lr:.5f}\t'
                          'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                          'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
@@ -338,7 +329,7 @@ def validate(val_loader, model, criterion, logger=None):
             batch_time.update(time.time() - end)
             end = time.time()
 
-            if i % args.print_freq == 0 or i == len(val_loader):
+            if (i % args.print_freq == 0 and i != 0) or i == len(val_loader):
                 logger.info(
                     ('Test: [{0}/{1}]\t'
                      'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
