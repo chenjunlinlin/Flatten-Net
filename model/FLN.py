@@ -67,7 +67,7 @@ class FLN(nn.Module):
 
     def forward(self, input):
 
-        input = self.first_layer(input)
+        # input = self.first_layer(input)
 
         base_out = self.base_model(input)
 
