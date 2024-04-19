@@ -8,6 +8,7 @@ import torch
 from torchvision import transforms
 from einops import rearrange
 from script.process_video import mkdir_p
+import wandb
 
 
 class GroupRandomCrop(object):
@@ -339,8 +340,11 @@ class Stack(object):
                 return np.concatenate(img_group, axis=2),label
             
 class Flatten(object):
-    def __init__(self, size):
+    def __init__(self, size, epoch=0, length=1):
         self.size = size
+        self.epoch = epoch
+        self.length = length
+        self.count = 10
 
     def __call__(self, img):
         img_group, label = img
@@ -348,31 +352,43 @@ class Flatten(object):
         assert img_group.ndim == 4, "Input tensor should have 4 dimensions."
         x = img_group.shape[0]
         c = img_group.shape[1]
-        original_height = img_group.shape[2]
-        original_width = img_group.shape[3]
 
-        if x != 1:
-            # Find n and m values that satisfy x = 2n + 3m
-            for n in range(1, x // 2 + 1):  
-                m = x // n 
-                if n*m == x and 2*n==3*m:  
+        imgs_group = None
+
+        if self.length != 1:
+            # Find n and m values that satisfy l = 2n + 3m
+            for n in range(1, self.length // 2 + 1):  
+                m = self.length // n 
+                if n*m == self.length and 2*n==3*m:  
                     break
-            flat_images = rearrange(img_group, "(n m) c h w -> c (n h) (m w)", n=n, m=m)
-            flat_images = torchvision.transforms.Resize(self.size)(flat_images)
-        else:
-            flat_images = torch.squeeze(img_group, dim=0)
-            flat_images = torchvision.transforms.Resize(self.size)(flat_images)
-        
-        to_pil_img = transforms.ToPILImage()
-        img = to_pil_img(img_group[0])
-        imgs = to_pil_img(flat_images)
-        ind = int(random.random()*100)%30
-        mkdir_p("./examples")
-        imgs.save(f"./examples/fla_img_{ind}.png")
-        img.save(f"./examples/singal_{ind}.png")
+
+        for i in range(x//self.length):
+            imgs = img_group[i*self.length:(i+1)*self.length]
+            imgs_flatten = rearrange(imgs, "(n m) c h w -> c (n h) (m w)", n=n, m=m)
+            imgs_flatten = torchvision.transforms.Resize(self.size)(imgs_flatten)
+            imgs_flatten = torch.unsqueeze(imgs_flatten, dim=0)
+            if imgs_group is None:
+                imgs_group = imgs_flatten
+            else:
+                imgs_group = torch.cat((imgs_group,imgs_flatten), dim=0)
 
 
-        return flat_images, label
+        if self.epoch == 0:
+            mkdir_p("./examples")
+            to_pil_img = transforms.ToPILImage()
+            img = to_pil_img(img_group[0])
+            for i in range(imgs_group.shape[0]):
+                if self.count > 0:
+                    self.count = self.count -1
+                    imgs = to_pil_img(imgs_group[i])
+                    wandb.log({"examples": wandb.Image(imgs)})
+                    imgs.save(f"./examples/fla_img_{i:003d}.png")
+                else:
+                    break
+            img.save(f"./examples/singal.png")
+
+
+        return imgs_group, label
 
 
 class ToTorchFormatTensor(object):

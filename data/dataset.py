@@ -32,8 +32,8 @@ class TSNDataSet(data.Dataset):
     def __init__(self, dataset, root_path, list_file,
                  num_segments=3, new_length=1, clip_index=0, modality='RGB',
                  image_tmpl='img_{:05d}.jpg', transform=None,
-                 random_shift=True, test_mode=False,
-                 remove_missing=False, dense_sample=False, twice_sample=False):
+                 random_shift=True, test_mode=False, img_step=1,
+                 remove_missing=True, dense_sample=False, twice_sample=False):
 
         self.root_path = root_path
         self.list_file = list_file
@@ -46,6 +46,7 @@ class TSNDataSet(data.Dataset):
         self.random_shift = random_shift
         self.test_mode = test_mode
         self.dataset = dataset
+        self.img_step = img_step
         self.remove_missing = remove_missing
         self.I3D_sample = False  # using dense sample as I3D
         self.dense_sample = dense_sample  # using dense sample as I3D
@@ -77,7 +78,7 @@ class TSNDataSet(data.Dataset):
         print('video number:%d' % (len(self.videos_list)))
 
     def _sample_indices(self, video_list):
-        if not self.I3D_sample : # TSN uniformly sampling for TDN
+        if not self.I3D_sample : 
             if((len(video_list) - self.new_length + 1) < self.num_segments):
                 average_duration = (len(video_list) - 5 + 1) // (self.num_segments)
             else:
@@ -117,7 +118,16 @@ class TSNDataSet(data.Dataset):
             start_idx8 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
             start_idx9 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
             start_idx10 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
-            offsets = [(idx * t_stride + start_idx1) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx2) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx3) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx4) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx5) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx6) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx7) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx8) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx9) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx10) % len(video_list) for idx in range(self.num_segments)]
+            offsets = [(idx * t_stride + start_idx1) % len(video_list) for idx in range(self.num_segments)]
+            +[(idx * t_stride + start_idx2) % len(video_list) for idx in range(self.num_segments)]
+            +[(idx * t_stride + start_idx3) % len(video_list) for idx in range(self.num_segments)]
+            +[(idx * t_stride + start_idx4) % len(video_list) for idx in range(self.num_segments)]
+            +[(idx * t_stride + start_idx5) % len(video_list) for idx in range(self.num_segments)]
+            +[(idx * t_stride + start_idx6) % len(video_list) for idx in range(self.num_segments)]
+            +[(idx * t_stride + start_idx7) % len(video_list) for idx in range(self.num_segments)]
+            +[(idx * t_stride + start_idx8) % len(video_list) for idx in range(self.num_segments)]
+            +[(idx * t_stride + start_idx9) % len(video_list) for idx in range(self.num_segments)]
+            +[(idx * t_stride + start_idx10) % len(video_list) for idx in range(self.num_segments)]
             return np.array(offsets) + 1
 
 
@@ -197,7 +207,7 @@ class TSNDataSet(data.Dataset):
         images = list()
         for seg_ind in indices:
             p = int(seg_ind)
-            for i in range(0,self.new_length,1):
+            for i in range(0,self.new_length // self.img_step):
                 if(decode_boo):
                     seg_imgs = [Image.fromarray(video_list[p-1].asnumpy()).convert('RGB')]
                 else:
@@ -205,10 +215,10 @@ class TSNDataSet(data.Dataset):
                 images.extend(seg_imgs)
                 if((len(video_list)-self.new_length*1+1)>=8):
                     if p < (len(video_list)):
-                        p += 1
+                        p += self.img_step
                 else:
                     if p < (len(video_list)):
-                        p += 1
+                        p += self.img_step
 
         process_data, record_label = self.transform((images,record.label))
 
