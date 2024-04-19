@@ -4,11 +4,13 @@ from utils.transforms import *
 from torch.nn.init import normal_, constant_
 from .resnet import get_resnet_model
 from .build_model import get_swin
+from einops import rearrange
+from opts.basic_ops import ConsensusModule
 
 
 class FLN(nn.Module):
     def __init__(self, num_class, num_segments, modality,
-                 base_model='resnet50', new_length=1, before_softmax=True, print_spec=True,
+                 base_model='resnet50', new_length=1, before_softmax=True, print_spec=True, consensus_type='avg', img_step=1,
                  dropout=0.8, img_feature_dim=256, crop_num=1,
                  pretrain=True, logger=None):
         super(FLN, self).__init__()
@@ -39,11 +41,13 @@ class FLN(nn.Module):
         input_modality:     {}
         num_segments:       {}
         new_length:         {}
+        img_step:           {}
         dropout_ratio:      {}
         img_feature_dim:    {}
-            """.format(base_model, self.modality, self.num_segments, self.new_length, self.dropout, self.img_feature_dim)))
+            """.format(base_model, self.modality, self.num_segments, self.new_length, img_step, self.dropout, self.img_feature_dim)))
 
         self._prepare_base_model(base_model, self.num_segments, logger)
+        self.consensus = ConsensusModule(consensus_type)
 
     def _prepare_base_model(self, base_model, num_segments, logger):
         print(('=> base model: {}'.format(base_model)))
@@ -69,11 +73,19 @@ class FLN(nn.Module):
 
         # input = self.first_layer(input)
 
-        base_out = self.base_model(input)
+        B, S, _, _, _, = input.shape
 
+        input = rearrange(input, "B S C H W -> (B S) C H W")
+
+        base_out = self.base_model(input)
         base_out = nn.Softmax()(base_out)
 
-        return base_out
+        base_out = rearrange(base_out, "(B S) C -> B S C", B=B, S=S)
+
+        output = self.consensus(base_out)
+        output = torch.squeeze(output, dim=1)
+
+        return output
 
     @property
     def crop_size(self):

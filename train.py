@@ -30,7 +30,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-os.environ['CUDA_VISIBLE_DEVICES'] = "0,1"
+os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 
 
 best_prec1 = 0
@@ -68,6 +68,8 @@ def main():
                 args.num_segments,
                 args.modality,
                 base_model=args.arch,
+                new_length=args.length,
+                img_step=args.img_step,
                 dropout=args.dropout,
                 img_feature_dim = args.img_feature_dim,
                 pretrain=args.pretrain,
@@ -96,14 +98,15 @@ def main():
         args.root_path,
         args.train_list,
         num_segments=args.num_segments,
-        new_length=1,
+        new_length=args.length,
+        img_step=args.img_step,
         modality=args.modality,
         image_tmpl=prefix,
         transform=torchvision.transforms.Compose([train_augmentation,
                                                   ToTorchFormatTensor(
                                                       div=True),
                                                   normalize,
-                                                 Flatten([args.img_feature_dim,args.img_feature_dim])]),
+                                                 Flatten([args.img_feature_dim,args.img_feature_dim], length=args.length//args.img_step)]),
         dense_sample=args.dense_sample)
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(
@@ -120,11 +123,13 @@ def main():
         num_segments=args.num_segments,
         modality=args.modality,
         image_tmpl=prefix,
+        new_length=args.length,
+        img_step=args.img_step,
         random_shift=False,
         test_mode=True,
         transform=torchvision.transforms.Compose([
             GroupScale(scale_size), GroupCenterCrop(crop_size),
-            ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim,args.img_feature_dim])]),
+            ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim,args.img_feature_dim], length=args.length//args.img_step)]),
         dense_sample=args.dense_sample)
 
     val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset)
