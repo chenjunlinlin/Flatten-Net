@@ -69,7 +69,7 @@ class TSNDataSet(data.Dataset):
         tmp = pd.read_csv(self.list_file).values.tolist()
         if len(tmp[0]) == 3: # skip remove_missin for decording "raw_video label" type dataset_config
             if not self.test_mode or self.remove_missing:
-                tmp = [item for item in tmp if int(item[1]) >= 6]
+                tmp = [item for item in tmp if int(item[1]) >= self.new_length + self.num_segments - 1]
         self.videos_list = [VideoRecord(item) for item in tmp]
 
         if self.image_tmpl == '{:06d}-{}_{:05d}.jpg':

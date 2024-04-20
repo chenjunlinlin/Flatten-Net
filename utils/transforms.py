@@ -216,10 +216,12 @@ class GroupMultiScaleCrop(object):
         img_group, label = img
         im_size = img_group[0].size
 
-        crop_w, crop_h, offset_w, offset_h = self._sample_crop_size(im_size)
-        crop_img_group = [img.crop((offset_w, offset_h, offset_w + crop_w, offset_h + crop_h)) for img in img_group]
-        ret_img_group = [img.resize((self.input_size[0], self.input_size[1]), self.interpolation)
-                         for img in crop_img_group]
+        if random.random() > 0.1:
+            crop_w, crop_h, offset_w, offset_h = self._sample_crop_size(im_size)
+            crop_img_group = [img.crop((offset_w, offset_h, offset_w + crop_w, offset_h + crop_h)) for img in img_group]
+            ret_img_group = [img.resize((self.input_size[0], self.input_size[1]), self.interpolation) for img in crop_img_group]
+        else:
+            ret_img_group = [img.resize((self.input_size[0], self.input_size[1]), self.interpolation) for img in img_group]
         return ret_img_group, label
 
     def _sample_crop_size(self, im_size):
@@ -344,7 +346,7 @@ class Flatten(object):
         self.size = size
         self.epoch = epoch
         self.length = length
-        self.count = 10
+        self.count = 2
 
     def __call__(self, img):
         img_group, label = img
