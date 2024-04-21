@@ -16,8 +16,8 @@ parser.add_argument('--store_name', type=str, default="")
 parser.add_argument('--arch', type=str, default="resnet50")
 parser.add_argument('--num_segments', type=int, default=2)
 parser.add_argument('--consensus_type', type=str, default='avg')
-parser.add_argument('--length', type=int, default=24)
-parser.add_argument('--img_step', type=int, default=4)
+parser.add_argument('--length', type=int, default=36)
+parser.add_argument('--img_step', type=int, default=6)
 parser.add_argument('--dropout', default=0.5, type=float, metavar='DO',
                     help='dropout ratio (default: 0.5)')
 parser.add_argument('--loss_type', type=str, default="nll", choices=['nll'])
@@ -29,17 +29,17 @@ parser.add_argument('--tune_from', type=str, default=None,
                     help='fine-tune from checkpoint')
 parser.add_argument('--experiment_name', type=str, default='FLN')
 # ========================= Learning Configs ==========================
-parser.add_argument('--epochs', default=200, type=int, metavar='N',
+parser.add_argument('--epochs', default=500, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('-b', '--batch-size', default=24, type=int, metavar='N',
                     help='mini-batch size (default: 256)')
-parser.add_argument('--lr_scheduler', type=str, default='reduce')
+parser.add_argument('--lr_scheduler', type=str, default='step')
 parser.add_argument('--warmup_epoch', type=int, default=0)
-parser.add_argument('--lr_decay_rate', type=float, default=0.1)
+parser.add_argument('--lr_decay_rate', type=float, default=0.3)
 parser.add_argument('--warmup_multiplier', type=int, default=1)
 parser.add_argument('--lr', '--learning-rate', default=0.02, type=float, metavar='LR',
                     help='initial learning rate')
-parser.add_argument('--lr_steps', default=[25, 75, 175, 250, 300, 400 ], type=float, nargs="+", metavar='LRSteps',
+parser.add_argument('--lr_steps', default=[150, 250, 350, 350, 450 ], type=float, nargs="+", metavar='LRSteps',
                     help='epochs to decay learning rate by 10')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
