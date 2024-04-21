@@ -216,7 +216,7 @@ class GroupMultiScaleCrop(object):
         img_group, label = img
         im_size = img_group[0].size
 
-        if random.random() > 0.1:
+        if random.random() > 0.3:
             crop_w, crop_h, offset_w, offset_h = self._sample_crop_size(im_size)
             crop_img_group = [img.crop((offset_w, offset_h, offset_w + crop_w, offset_h + crop_h)) for img in img_group]
             ret_img_group = [img.resize((self.input_size[0], self.input_size[1]), self.interpolation) for img in crop_img_group]
@@ -346,7 +346,6 @@ class Flatten(object):
         self.size = size
         self.epoch = epoch
         self.length = length
-        self.count = 2
 
     def __call__(self, img):
         img_group, label = img
@@ -380,8 +379,7 @@ class Flatten(object):
             to_pil_img = transforms.ToPILImage()
             img = to_pil_img(img_group[0])
             for i in range(imgs_group.shape[0]):
-                if self.count > 0:
-                    self.count = self.count -1
+                if random.random() < 0.001:
                     imgs = to_pil_img(imgs_group[i])
                     wandb.log({"examples": wandb.Image(imgs)})
                     imgs.save(f"./examples/fla_img_{i:003d}.png")

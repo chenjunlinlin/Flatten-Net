@@ -76,7 +76,7 @@ def main():
                 logger=logger)
     
     if dist.get_rank() == 0:
-        init_wandb(args.store_name, cfg=args)
+        init_wandb(args.store_name, cfg=args, resume= (True if args.resume is not None else False))
         wandb.watch(model, log='all', log_freq=100, log_graph=True)
 
     
@@ -106,7 +106,7 @@ def main():
                                                   ToTorchFormatTensor(
                                                       div=True),
                                                   normalize,
-                                                 Flatten([args.img_feature_dim,args.img_feature_dim], length=args.length//args.img_step)]),
+                                                 Flatten([args.img_feature_dim,args.img_feature_dim], length=24)]),
         dense_sample=args.dense_sample)
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(
@@ -129,7 +129,7 @@ def main():
         test_mode=True,
         transform=torchvision.transforms.Compose([
             GroupScale(scale_size), GroupCenterCrop(crop_size),
-            ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim,args.img_feature_dim], length=args.length//args.img_step)]),
+            ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim,args.img_feature_dim], length=24)]),
         dense_sample=args.dense_sample)
 
     val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset)
@@ -208,10 +208,12 @@ def main():
 
         return
 
+    latest_loss = 0
     for epoch in range(args.start_epoch, args.epochs):
         train_loader.sampler.set_epoch(epoch)
         train_loss, train_top1, train_top5 = train(
-            train_loader, model, criterion, optimizer, epoch=epoch, logger=logger, scheduler=scheduler)
+            train_loader, model, criterion, optimizer, epoch=epoch, latest_loss=latest_loss, logger=logger, scheduler=scheduler)
+        latest_loss = train_loss
         if dist.get_rank() == 0:
             wandb.log({
                     "LR": optimizer.param_groups[0]['lr'],
@@ -253,12 +255,14 @@ def main():
     wandb.finish()
     dist.destroy_process_group()
 
-def train(train_loader, model, criterion, optimizer, epoch, logger=None, scheduler=None):
+def train(train_loader, model, criterion, optimizer, epoch, latest_loss, logger=None, scheduler=None):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
+
+    losses.avg = latest_loss
 
     model.train()
 
@@ -293,13 +297,13 @@ def train(train_loader, model, criterion, optimizer, epoch, logger=None, schedul
         end = time.time()
         
         if (i % args.print_freq == 0 and i != 0) or i == len(train_loader)-1:
-            logger.info(('Epoch: [{0}][{1}/{2}], lr: {lr:.5f}\t'
+            logger.info(('Epoch: [{0}/{1}][{2}/{3}], lr: {lr:.5f}\t'
                          'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                          'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
                          'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                          'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
                          'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                             epoch, i, len(train_loader), batch_time=batch_time, data_time=data_time, loss=losses,
+                             epoch, args.epochs, i, len(train_loader), batch_time=batch_time, data_time=data_time, loss=losses,
                              top1=top1, top5=top5, lr=optimizer.param_groups[-1]['lr'])))  # TODO
             
     return losses.avg, top1.avg, top5.avg
@@ -384,7 +388,7 @@ def ddp_setup(local_rank):
     torch.cuda.set_device(local_rank)
     print(f"[init] == local rank: {int(os.environ['LOCAL_RANK'])} ==")
 
-def init_wandb(exp_name, cfg):
+def init_wandb(exp_name, cfg, resume):
     cur_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     wandb.init(
         entity="324",  # wandb上对应的team名称（必填）
@@ -393,6 +397,7 @@ def init_wandb(exp_name, cfg):
         # tags=["yolo", "lanes-detection"],  # 本次实验的标签（可选）
         notes=f"{exp_name}",  # 本次实验的备注（可选）
         config=cfg.__dict__,  # 本次实验的配置说明（可选）
+        resume= resume
     )
 
 if __name__ == '__main__':

@@ -95,8 +95,8 @@ class TSNDataSet(data.Dataset):
                 offsets += list(np.zeros((self.num_segments,)))
             offsets = np.array(offsets)
 
-            if self.num_segments == 1:
-                offsets = np.repeat(offsets, repeats=6, axis=0)
+            # if self.num_segments == 1:
+            #     offsets = np.repeat(offsets, repeats=6, axis=0)
 
             return offsets + 1
         elif self.dataset == 'kinetics' and self.I3D_sample and (not self.dense_sample) : # i3d type sampling for training
@@ -160,8 +160,8 @@ class TSNDataSet(data.Dataset):
             else:
                 offsets = np.zeros((self.num_segments,))
             
-            if self.num_segments == 1:
-                offsets = np.repeat(offsets, repeats=6, axis=0)
+            # if self.num_segments == 1:
+            #     offsets = np.repeat(offsets, repeats=6, axis=0)
 
             return offsets + 1
 
