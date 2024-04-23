@@ -45,8 +45,8 @@ def main():
     num_class, args.train_list, args.val_list, args.root_path, prefix = dataset_config.return_dataset(
         args.dataset, args.modality)
     full_arch_name = args.arch
-    args.store_name = '_'.join(['FLN', args.dataset, args.modality, 
-                                full_arch_name, args.consensus_type, 'segment%d' % args.num_segments, 'e{}'.format(args.epochs)])
+    args.store_name = '_'.join(['segment%d'%args.num_segments,
+                                'length%d'%args.length, 'step%d'%args.img_step, full_arch_name, args.consensus_type,  'e{}'.format(args.epochs)])
     if args.pretrain != 'imagenet':
         args.store_name += '_{}'.format(args.pretrain)
     if args.dense_sample:
@@ -106,7 +106,7 @@ def main():
                                                   ToTorchFormatTensor(
                                                       div=True),
                                                   normalize,
-                                                 Flatten([args.img_feature_dim,args.img_feature_dim], length=24)]),
+                                                 Flatten([args.img_feature_dim,args.img_feature_dim], length=4)]),
         dense_sample=args.dense_sample)
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(
@@ -129,7 +129,7 @@ def main():
         test_mode=True,
         transform=torchvision.transforms.Compose([
             GroupScale(scale_size), GroupCenterCrop(crop_size),
-            ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim,args.img_feature_dim], length=24)]),
+            ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim,args.img_feature_dim], length=4)]),
         dense_sample=args.dense_sample)
 
     val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset)
@@ -208,7 +208,7 @@ def main():
 
         return
 
-    latest_loss = 0
+    latest_loss = 4
     for epoch in range(args.start_epoch, args.epochs):
         train_loader.sampler.set_epoch(epoch)
         train_loss, train_top1, train_top5 = train(

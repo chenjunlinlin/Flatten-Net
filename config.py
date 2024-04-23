@@ -29,21 +29,21 @@ parser.add_argument('--tune_from', type=str, default=None,
                     help='fine-tune from checkpoint')
 parser.add_argument('--experiment_name', type=str, default='FLN')
 # ========================= Learning Configs ==========================
-parser.add_argument('--epochs', default=400, type=int, metavar='N',
+parser.add_argument('--epochs', default=300, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('-b', '--batch-size', default=12, type=int, metavar='N',
                     help='mini-batch size (default: 256)')
 parser.add_argument('--lr_scheduler', type=str, default='reduce')
 parser.add_argument('--warmup_epoch', type=int, default=0)
-parser.add_argument('--lr_decay_rate', type=float, default=0.3)
+parser.add_argument('--lr_decay_rate', type=float, default=0.5)
 parser.add_argument('--warmup_multiplier', type=int, default=1)
-parser.add_argument('--lr', '--learning-rate', default=0.02, type=float, metavar='LR',
+parser.add_argument('--lr', '--learning-rate', default=0.01, type=float, metavar='LR',
                     help='initial learning rate')
 parser.add_argument('--lr_steps', default=[25, 75, 175, 250, 300, 400 ], type=float, nargs="+", metavar='LRSteps',
                     help='epochs to decay learning rate by 10')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
-parser.add_argument('--weight-decay', '--wd', default=8e-4, type=float, metavar='W',
+parser.add_argument('--weight-decay', '--wd', default=5e-4, type=float, metavar='W',
                     help='weight decay (default: 5e-4)')
 parser.add_argument('--clip-gradient', '--gd', default=None, type=float, metavar='W',
                     help='gradient norm clipping (default: disabled)')

@@ -445,5 +445,6 @@ def wide_resnet101_2(pretrained: bool = False, progress: bool = True, **kwargs: 
 
 func_dict = {
     'resnet18': resnet18,
-    'resnet50': resnet50
+    'resnet50': resnet50,
+    "resnet101": resnet101
 }
