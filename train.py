@@ -106,7 +106,7 @@ def main():
                                                   ToTorchFormatTensor(
                                                       div=True),
                                                   normalize,
-                                                 Flatten([args.img_feature_dim,args.img_feature_dim], length=24)]),
+                                                 Flatten([args.img_feature_dim,args.img_feature_dim], length=4)]),
         dense_sample=args.dense_sample)
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(
@@ -129,7 +129,7 @@ def main():
         test_mode=True,
         transform=torchvision.transforms.Compose([
             GroupScale(scale_size), GroupCenterCrop(crop_size),
-            ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim,args.img_feature_dim], length=24)]),
+            ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim * 255 // 224,args.img_feature_dim* 255 // 224], length=4)]),
         dense_sample=args.dense_sample)
 
     val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset)
@@ -208,7 +208,7 @@ def main():
 
         return
 
-    latest_loss = 0
+    latest_loss = 4
     for epoch in range(args.start_epoch, args.epochs):
         train_loader.sampler.set_epoch(epoch)
         train_loss, train_top1, train_top5 = train(

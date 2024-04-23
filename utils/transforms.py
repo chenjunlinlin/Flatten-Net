@@ -216,7 +216,7 @@ class GroupMultiScaleCrop(object):
         img_group, label = img
         im_size = img_group[0].size
 
-        if random.random() > 0.3:
+        if random.random() > 0:
             crop_w, crop_h, offset_w, offset_h = self._sample_crop_size(im_size)
             crop_img_group = [img.crop((offset_w, offset_h, offset_w + crop_w, offset_h + crop_h)) for img in img_group]
             ret_img_group = [img.resize((self.input_size[0], self.input_size[1]), self.interpolation) for img in crop_img_group]
@@ -230,6 +230,8 @@ class GroupMultiScaleCrop(object):
         # find a crop size
         base_size = min(image_w, image_h)
         crop_sizes = [int(base_size * x) for x in self.scales]
+        # crop_sizes_w = [int(image_w * x) for x in self.scales]
+        # crop_sizes_h = [int(image_h * x) for x in self.scales]
         crop_h = [self.input_size[1] if abs(x - self.input_size[1]) < 3 else x for x in crop_sizes]
         crop_w = [self.input_size[0] if abs(x - self.input_size[0]) < 3 else x for x in crop_sizes]
 
@@ -360,7 +362,7 @@ class Flatten(object):
             # Find n and m values that satisfy l = 2n + 3m
             for n in range(1, self.length // 2 + 1):  
                 m = self.length // n 
-                if n*m == self.length and 2*n==3*m:  
+                if n*m == self.length and n==m:  
                     break
 
         for i in range(x//self.length):
@@ -379,13 +381,12 @@ class Flatten(object):
             to_pil_img = transforms.ToPILImage()
             img = to_pil_img(img_group[0])
             for i in range(imgs_group.shape[0]):
-                if random.random() < 0.001:
+                if random.random() < 0.0005:
                     imgs = to_pil_img(imgs_group[i])
                     wandb.log({"examples": wandb.Image(imgs)})
                     imgs.save(f"./examples/fla_img_{i:003d}.png")
                 else:
                     break
-            img.save(f"./examples/singal.png")
 
 
         return imgs_group, label

@@ -33,7 +33,7 @@ def split_dataset(dataset_path, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
         for video_folder in train_videos:
             src_path = os.path.join(class_path, video_folder)
             num_frame = len(os.listdir(src_path))
-            path = src_path.replace("../dataset/", "")
+            path = src_path.replace("../dataset/", "./dataset/")
             train_csv.append([f"{path}", num_frame, label])
             # dest_path = os.path.join("train", class_folder, video_folder)
             # shutil.move(src_path, dest_path)
@@ -41,7 +41,7 @@ def split_dataset(dataset_path, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
         for video_folder in val_videos:
             src_path = os.path.join(class_path, video_folder)
             num_frame = len(os.listdir(src_path))
-            path = src_path.replace("../dataset/", "")
+            path = src_path.replace("../dataset/", "./dataset/")
             val_csv.append([f"{path}", num_frame, label])
             # dest_path = os.path.join("val", class_folder, video_folder)
             # shutil.move(src_path, dest_path)
@@ -49,7 +49,7 @@ def split_dataset(dataset_path, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
         for video_folder in test_videos:
             src_path = os.path.join(class_path, video_folder)
             num_frame = len(os.listdir(src_path))
-            path = src_path.replace("../dataset/", "")
+            path = src_path.replace("../dataset/", "./dataset/")
             test_csv.append([f"{path}", num_frame, label])
             # dest_path = os.path.join("test", class_folder, video_folder)
             # shutil.move(src_path, dest_path)
@@ -61,12 +61,12 @@ def split_dataset(dataset_path, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
 
 if __name__ == "__main__":
     dataset_path = "../dataset/HMDB51/video_imgs"
-    train_ratio = 0.7
+    train_ratio = 0.8
     val_ratio = 0
-    test_ratio = 0.3
+    test_ratio = 0.2
     train_path = "../dataset/HMDB51/train.csv"
     val_path = "../dataset/HMDB51/val.csv"
-    test_path = "/raid5/chenjunlin/code/flatten-net/dataset/HMDB51/test.csv"
+    test_path = "../dataset/HMDB51/test.csv"
 
     train_df, val_df, test_df = split_dataset(dataset_path, train_ratio,
                                                val_ratio, test_ratio)

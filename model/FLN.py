@@ -54,7 +54,7 @@ class FLN(nn.Module):
         if 'resnet' in base_model:
             self.base_model = self._get_model(model_name=self.base_model_name, logger=logger)
             self.base_model.last_layer_name = 'fc'
-            self.input_size = [336, 224]  # w * h
+            self.input_size = [224, 224]  # w * h
             self.input_mean = [0.485, 0.456, 0.406]
             self.input_std = [0.229, 0.224, 0.225]
         else:

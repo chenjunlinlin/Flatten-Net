@@ -5,3 +5,4 @@ log/
 wandb/
 debuger.py
 test.ipynb
+.vscode
