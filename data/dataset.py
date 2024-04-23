@@ -10,6 +10,7 @@ import os
 import numpy as np
 import pandas as pd 
 from numpy.random import randint
+import torch
 
 class VideoRecord(object):
     def __init__(self, row):
@@ -194,6 +195,7 @@ class TSNDataSet(data.Dataset):
                 segment_indices = self._sample_indices(video_list) 
             else:
                 segment_indices = self._sample_indices(video_list) if self.random_shift else self._get_val_indices(video_list) 
+            # np.random.shuffle(segment_indices)
         else:
             if self.dataset == 'kinetics':
                 segment_indices = self._sample_indices(video_list)
@@ -221,8 +223,9 @@ class TSNDataSet(data.Dataset):
                         p += self.img_step
 
         process_data, record_label = self.transform((images,record.label))
+        ind_label = torch.from_numpy(indices).to(torch.float)
 
-        return process_data, record_label
+        return process_data, record_label, ind_label
 
     def __len__(self):
         return len(self.videos_list)

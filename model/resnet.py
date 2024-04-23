@@ -41,8 +41,8 @@ def get_resnet_model(num_classes, pretrained, progress, model_name='resnet18'):
     instance = model(pretrained=pretrained, progress=progress, 
                     zero_init_residual=False)
     # set_parameter_requires_grad(instance, freezing=pretrained)
-    in_features = instance.fc.in_features
-    instance.fc = nn.Linear(in_features=in_features, out_features=num_classes)
+    # in_features = instance.fc.in_features
+    # instance.fc = nn.Linear(in_features=in_features, out_features=num_classes)
     if pretrained:
         print(f"success load model: {model_name}!!!")
 

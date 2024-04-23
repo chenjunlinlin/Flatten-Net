@@ -138,13 +138,18 @@ def main():
                                              pin_memory=True, sampler=val_sampler, drop_last=True)
 
     # define loss function (criterion) and optimizer
+    criterion = list()
     if args.loss_type == 'nll':
-        criterion = torch.nn.CrossEntropyLoss().cuda()
+        criterion.append(torch.nn.CrossEntropyLoss().cuda())
+        criterion.append(torch.nn.MSELoss().cuda())
     else:
         raise ValueError("Unknown loss type")
 
-    optimizer = torch.optim.SGD(model.parameters(), args.lr,
-                                momentum=args.momentum,
+    # optimizer = torch.optim.SGD(model.parameters(), args.lr,
+    #                             momentum=args.momentum,
+    #                             weight_decay=args.weight_decay)
+
+    optimizer = torch.optim.Adam(model.parameters(), args.lr,
                                 weight_decay=args.weight_decay)
 
     scheduler = get_scheduler(optimizer, len(train_loader), args)
@@ -259,6 +264,8 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, logger=
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
+    class_losses = AverageMeter()
+    ind_losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
 
@@ -267,19 +274,24 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, logger=
     model.train()
 
     end = time.time()
-    for i, (input, target) in enumerate(train_loader):
+    for i, (input, target, ind_label) in enumerate(train_loader):
 
         data_time.update(time.time() - end)
         target = target.cuda()
+        ind_label = ind_label.cuda()
         input_var = input.cuda()
         target_var = target
-        output = model(input_var)
-        loss = criterion(output, target_var)
+        output, ind_output = model(input_var)
+        class_loss = criterion[0](output, target_var)
+        ind_loss = criterion[1](ind_output, ind_label) / 500
+        loss = class_loss + ind_loss
         prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
 
         losses.update(loss.item(), input.size(0))
         top1.update(prec1.item(), input.size(0))
         top5.update(prec5.item(), input.size(0))
+        class_losses.update(class_loss.item(), input.size(0))
+        ind_losses.update(ind_loss.item(), input.size(0))
 
         optimizer.zero_grad()
 
@@ -289,7 +301,7 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, logger=
             clip_grad_norm_(model.parameters(), args.clip_gradient)
 
         optimizer.step()
-        if args.lr_scheduler == "reduce":
+        if args.lr_scheduler == "reduce" and "SGD" in str(type(optimizer)):
             scheduler.step(metrics=losses.avg)
         else:
             scheduler.step()
@@ -297,13 +309,14 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, logger=
         end = time.time()
         
         if (i % args.print_freq == 0 and i != 0) or i == len(train_loader)-1:
-            logger.info(('Epoch: [{0}/{1}][{2}/{3}], lr: {lr:.5f}\t'
-                         'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                         'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                         'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                         'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+            logger.info(('Epoch: [{0}/{1}][{2}/{3}], lr: {lr:.5f}  '
+                         'Time {batch_time.val:.3f} ({batch_time.avg:.3f})  '
+                         'Data {data_time.val:.3f} ({data_time.avg:.3f})  '
+                         'Loss {loss.val:.4f} ({loss.avg:.4f})  '
+                         'Loss_ind {ind_loss.val:.4f} ({ind_loss.avg:.4f})  '
+                         'Prec@1 {top1.val:.3f} ({top1.avg:.3f})  '
                          'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                             epoch, args.epochs, i, len(train_loader), batch_time=batch_time, data_time=data_time, loss=losses,
+                             epoch, args.epochs, i, len(train_loader), batch_time=batch_time, data_time=data_time, loss=losses, ind_loss=ind_losses,
                              top1=top1, top5=top5, lr=optimizer.param_groups[-1]['lr'])))  # TODO
             
     return losses.avg, top1.avg, top5.avg
@@ -313,6 +326,8 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, logger=
 def validate(val_loader, model, criterion, logger=None):
     batch_time = AverageMeter()
     losses = AverageMeter()
+    ind_losses = AverageMeter()
+    losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
 
@@ -320,18 +335,21 @@ def validate(val_loader, model, criterion, logger=None):
 
     end = time.time()
     with torch.no_grad():
-        for i, (input, target) in enumerate(val_loader):
+        for i, (input, target, ind_label) in enumerate(val_loader):
             target = target.cuda()
-            output = model(input)
-
-            loss = criterion(output, target)
+            ind_label = ind_label.cuda()
+            output, ind_output = model(input)
+            ind_loss = criterion[1](ind_output, ind_label)
+            loss = criterion[0](output, target) + ind_loss
             prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
 
             loss = reduce_tensor(loss)
+            ind_loss = reduce_tensor(ind_loss)
             prec1 = reduce_tensor(prec1)
             prec5 = reduce_tensor(prec5)
 
             losses.update(loss.item(), input.size(0))
+            ind_losses.update(ind_loss.item(), input.size(0))
             top1.update(prec1.item(), input.size(0))
             top5.update(prec5.item(), input.size(0))
 
@@ -343,9 +361,10 @@ def validate(val_loader, model, criterion, logger=None):
                     ('Test: [{0}/{1}]\t'
                      'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                     'Loss_ind {ind_loss.val:.4f} ({ind_loss.avg:.4f})\t'
                      'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
                      'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                         i, len(val_loader), batch_time=batch_time, loss=losses, top1=top1, top5=top5)))
+                         i, len(val_loader), batch_time=batch_time, loss=losses, ind_loss=ind_losses, top1=top1, top5=top5)))
     logger.info(('Testing Results: Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f} Loss {loss.avg:.5f}'
                  .format(top1=top1, top5=top5, loss=losses)))
     return top1.avg, top5.avg, losses.avg

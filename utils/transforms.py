@@ -360,7 +360,7 @@ class Flatten(object):
             # Find n and m values that satisfy l = 2n + 3m
             for n in range(1, self.length // 2 + 1):  
                 m = self.length // n 
-                if n*m == self.length and 2*n==3*m:  
+                if n*m == self.length and n==m:  
                     break
 
         for i in range(x//self.length):
@@ -379,7 +379,7 @@ class Flatten(object):
             to_pil_img = transforms.ToPILImage()
             img = to_pil_img(img_group[0])
             for i in range(imgs_group.shape[0]):
-                if random.random() < 0.001:
+                if random.random() < 0.0005:
                     imgs = to_pil_img(imgs_group[i])
                     wandb.log({"examples": wandb.Image(imgs)})
                     imgs.save(f"./examples/fla_img_{i:003d}.png")
