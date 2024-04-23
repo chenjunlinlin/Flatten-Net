@@ -48,6 +48,18 @@ class FLN(nn.Module):
 
         self._prepare_base_model(base_model, self.num_segments, logger)
         self.consensus = ConsensusModule(consensus_type)
+        in_features = self.base_model.fc.in_features
+        self.base_model.fc = nn.Identity()
+        self.class_head = nn.Linear(in_features=in_features,
+                                     out_features=self.num_classes)
+
+        self.ind_head = nn.Sequential(
+            nn.Linear(in_features=in_features, out_features=512),
+            nn.Linear(in_features=512, out_features=self.num_segments)
+        )
+        nn.Linear(in_features=in_features,
+                                   out_features=num_segments)
+
 
     def _prepare_base_model(self, base_model, num_segments, logger):
         print(('=> base model: {}'.format(base_model)))
@@ -78,14 +90,18 @@ class FLN(nn.Module):
         input = rearrange(input, "B S C H W -> (B S) C H W")
 
         base_out = self.base_model(input)
-        base_out = nn.Softmax()(base_out)
 
-        base_out = rearrange(base_out, "(B S) C -> B S C", B=B, S=S)
-
-        output = self.consensus(base_out)
+        if self.dropout > 0:
+            base_out = nn.Dropout(self.dropout)(base_out)
+        class_out = self.class_head(base_out)
+        class_out = nn.Softmax()(class_out)
+        class_out = rearrange(class_out, "(B S) C -> B S C", B=B, S=S)
+        output = self.consensus(class_out)
         output = torch.squeeze(output, dim=1)
 
-        return output
+        ind_out = self.ind_head(base_out)
+
+        return output, ind_out
 
     @property
     def crop_size(self):

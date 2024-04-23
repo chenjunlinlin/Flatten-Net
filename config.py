@@ -29,7 +29,15 @@ parser.add_argument('--tune_from', type=str, default=None,
                     help='fine-tune from checkpoint')
 parser.add_argument('--experiment_name', type=str, default='FLN')
 # ========================= Learning Configs ==========================
+<<<<<<< HEAD
 parser.add_argument('--epochs', default=300, type=int, metavar='N',
+=======
+<<<<<<< HEAD
+parser.add_argument('--epochs', default=300, type=int, metavar='N',
+=======
+parser.add_argument('--epochs', default=500, type=int, metavar='N',
+>>>>>>> bb33bcdff7daebe0b065abb921e4de55217f99ef
+>>>>>>> 6194bb3a75876ea3ccd38f49822d2fb1e6b55b3e
                     help='number of total epochs to run')
 parser.add_argument('-b', '--batch-size', default=64, type=int, metavar='N',
                     help='mini-batch size (default: 256)')
@@ -37,7 +45,7 @@ parser.add_argument('--lr_scheduler', type=str, default='reduce')
 parser.add_argument('--warmup_epoch', type=int, default=0)
 parser.add_argument('--lr_decay_rate', type=float, default=0.4)
 parser.add_argument('--warmup_multiplier', type=int, default=1)
-parser.add_argument('--lr', '--learning-rate', default=0.02, type=float, metavar='LR',
+parser.add_argument('--lr', '--learning-rate', default=0.1, type=float, metavar='LR',
                     help='initial learning rate')
 parser.add_argument('--lr_steps', default=[50, 100, 150, 200, 250 ], type=float, nargs="+", metavar='LRSteps',
                     help='epochs to decay learning rate by 10')

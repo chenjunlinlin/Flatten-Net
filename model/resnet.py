@@ -41,8 +41,8 @@ def get_resnet_model(num_classes, pretrained, progress, model_name='resnet18'):
     instance = model(pretrained=pretrained, progress=progress, 
                     zero_init_residual=False)
     # set_parameter_requires_grad(instance, freezing=pretrained)
-    in_features = instance.fc.in_features
-    instance.fc = nn.Linear(in_features=in_features, out_features=num_classes)
+    # in_features = instance.fc.in_features
+    # instance.fc = nn.Linear(in_features=in_features, out_features=num_classes)
     if pretrained:
         print(f"success load model: {model_name}!!!")
 
@@ -446,5 +446,9 @@ def wide_resnet101_2(pretrained: bool = False, progress: bool = True, **kwargs: 
 func_dict = {
     'resnet18': resnet18,
     'resnet50': resnet50,
+<<<<<<< HEAD
+    "resnet101": resnet101
+=======
     'resnet101': resnet101
+>>>>>>> bb33bcdff7daebe0b065abb921e4de55217f99ef
 }

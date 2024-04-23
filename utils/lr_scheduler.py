@@ -19,7 +19,7 @@ def get_scheduler(optimizer, n_iter_per_epoch, args):
             gamma=args.lr_decay_rate,
             milestones=[(m - args.warmup_epoch) * n_iter_per_epoch for m in args.lr_steps])
     elif "reduce":
-        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=args.lr_decay_rate, patience=30 * n_iter_per_epoch, verbose=True)
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=args.lr_decay_rate, patience=20 * n_iter_per_epoch, verbose=True)
     else:
         raise NotImplementedError(f"scheduler {args.lr_scheduler} not supported")
 
