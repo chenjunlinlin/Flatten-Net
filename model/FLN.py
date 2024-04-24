@@ -100,6 +100,7 @@ class FLN(nn.Module):
         output = torch.squeeze(output, dim=1)
 
         ind_out = self.ind_head(base_out)
+        ind_out = nn.Sigmoid()(ind_out)
 
         return output, ind_out
 

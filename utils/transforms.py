@@ -216,11 +216,7 @@ class GroupMultiScaleCrop(object):
         img_group, label = img
         im_size = img_group[0].size
 
-<<<<<<< HEAD
-        if random.random() > 0:
-=======
         if random.random() > 0.1:
->>>>>>> 6194bb3a75876ea3ccd38f49822d2fb1e6b55b3e
             crop_w, crop_h, offset_w, offset_h = self._sample_crop_size(im_size)
             crop_img_group = [img.crop((offset_w, offset_h, offset_w + crop_w, offset_h + crop_h)) for img in img_group]
             ret_img_group = [img.resize((self.input_size[0], self.input_size[1]), self.interpolation) for img in crop_img_group]
@@ -380,17 +376,17 @@ class Flatten(object):
                 imgs_group = torch.cat((imgs_group,imgs_flatten), dim=0)
 
 
-        if self.epoch == 0:
-            mkdir_p("./examples")
-            to_pil_img = transforms.ToPILImage()
-            img = to_pil_img(img_group[0])
-            for i in range(imgs_group.shape[0]):
-                if random.random() < 0.0005:
-                    imgs = to_pil_img(imgs_group[i])
-                    wandb.log({"examples": wandb.Image(imgs)})
-                    imgs.save(f"./examples/fla_img_{i:003d}.png")
-                else:
-                    break
+        # if self.epoch == 0:
+        #     mkdir_p("./examples")
+        #     to_pil_img = transforms.ToPILImage()
+        #     img = to_pil_img(img_group[0])
+        #     for i in range(imgs_group.shape[0]):
+        #         if random.random() < 0.00005:
+        #             imgs = to_pil_img(imgs_group[i])
+        #             wandb.log({"examples": wandb.Image(imgs)})
+        #             imgs.save(f"./examples/fla_img_{i:003d}.png")
+        #         else:
+        #             break
 
 
         return imgs_group, label

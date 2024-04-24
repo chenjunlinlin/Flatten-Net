@@ -77,7 +77,7 @@ def main():
     
     if dist.get_rank() == 0:
         init_wandb(args.store_name, cfg=args, resume= (True if args.resume is not None else False))
-        wandb.watch(model, log='all', log_freq=100, log_graph=True)
+        wandb.watch(model, log='all', log_freq=100, log_graph=False)
 
     
     crop_size = model.crop_size
@@ -106,7 +106,7 @@ def main():
                                                   ToTorchFormatTensor(
                                                       div=True),
                                                   normalize,
-                                                 Flatten([args.img_feature_dim,args.img_feature_dim], length=4)]),
+                                                 Flatten([args.img_feature_dim,args.img_feature_dim], length=9)]),
         dense_sample=args.dense_sample)
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(
@@ -129,11 +129,7 @@ def main():
         test_mode=True,
         transform=torchvision.transforms.Compose([
             GroupScale(scale_size), GroupCenterCrop(crop_size),
-<<<<<<< HEAD
-            ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim * 255 // 224,args.img_feature_dim* 255 // 224], length=4)]),
-=======
-            ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim,args.img_feature_dim], length=4)]),
->>>>>>> 6194bb3a75876ea3ccd38f49822d2fb1e6b55b3e
+            ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim,args.img_feature_dim], length=9)]),
         dense_sample=args.dense_sample)
 
     val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset)
@@ -148,13 +144,14 @@ def main():
         criterion.append(torch.nn.MSELoss().cuda())
     else:
         raise ValueError("Unknown loss type")
-
-    # optimizer = torch.optim.SGD(model.parameters(), args.lr,
-    #                             momentum=args.momentum,
-    #                             weight_decay=args.weight_decay)
-
-    optimizer = torch.optim.Adam(model.parameters(), args.lr,
-                                weight_decay=args.weight_decay)
+    
+    if args.optimizer == "SGD":
+        optimizer = torch.optim.SGD(model.parameters(), args.lr,
+                                    momentum=args.momentum,
+                                    weight_decay=args.weight_decay)
+    elif args.optimizer == "Adam":
+        optimizer = torch.optim.Adam(model.parameters(), args.lr,
+                                    weight_decay=args.weight_decay)
 
     scheduler = get_scheduler(optimizer, len(train_loader), args)
 
@@ -236,6 +233,9 @@ def main():
             val_loader.sampler.set_epoch(epoch)
             prec1, prec5, val_loss = validate(
                 val_loader, model, criterion, logger)
+            latest_loss = val_loss
+            if args.lr_scheduler == "reduce" and "SGD" in str(type(optimizer)):
+                scheduler.step(metrics=latest_loss)
             if dist.get_rank() == 0:
                 wandb.log({
                     "Loss_test": val_loss,
@@ -264,7 +264,7 @@ def main():
     wandb.finish()
     dist.destroy_process_group()
 
-def train(train_loader, model, criterion, optimizer, epoch, latest_loss, logger=None, scheduler=None):
+def train(train_loader, model, criterion, optimizer, epoch, latest_loss, beta=250, logger=None, scheduler=None):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -272,6 +272,7 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, logger=
     ind_losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
+    acces = AverageMeter()
 
     losses.avg = latest_loss
 
@@ -287,15 +288,17 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, logger=
         target_var = target
         output, ind_output = model(input_var)
         class_loss = criterion[0](output, target_var)
-        ind_loss = criterion[1](ind_output, ind_label) / 500
+        ind_loss = criterion[1](ind_output, ind_label) * beta / args.num_segments
         loss = class_loss + ind_loss
         prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
+        acc = get_acc(ind_output, ind_label)
 
         losses.update(loss.item(), input.size(0))
         top1.update(prec1.item(), input.size(0))
         top5.update(prec5.item(), input.size(0))
         class_losses.update(class_loss.item(), input.size(0))
         ind_losses.update(ind_loss.item(), input.size(0))
+        acces.update(acc.item(), input.size(0))
 
         optimizer.zero_grad()
 
@@ -305,22 +308,23 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, logger=
             clip_grad_norm_(model.parameters(), args.clip_gradient)
 
         optimizer.step()
-        if args.lr_scheduler == "reduce" and "SGD" in str(type(optimizer)):
-            scheduler.step(metrics=losses.avg)
-        else:
-            scheduler.step()
+        # if args.lr_scheduler == "reduce" and "SGD" in str(type(optimizer)):
+        #     scheduler.step(metrics=latest_loss)
+        # else:
+        #     scheduler.step()
         batch_time.update(time.time() - end)
         end = time.time()
         
         if (i % args.print_freq == 0 and i != 0) or i == len(train_loader)-1:
-            logger.info(('Epoch: [{0}/{1}][{2}/{3}], lr: {lr:.5f}  '
-                         'Time {batch_time.val:.3f} ({batch_time.avg:.3f})  '
-                         'Data {data_time.val:.3f} ({data_time.avg:.3f})  '
-                         'Loss {loss.val:.4f} ({loss.avg:.4f})  '
-                         'Loss_ind {ind_loss.val:.4f} ({ind_loss.avg:.4f})  '
-                         'Prec@1 {top1.val:.3f} ({top1.avg:.3f})  '
-                         'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                             epoch, args.epochs, i, len(train_loader), batch_time=batch_time, data_time=data_time, loss=losses, ind_loss=ind_losses,
+            logger.info(('Epoch: [{0}/{1}][{2}/{3}],\t lr: {lr:.5f}\t'
+                         'Time {batch_time.avg:.3f}\t'
+                         'Data {data_time.avg:.3f}\t'
+                         'Loss {loss.avg:.3f}\t'
+                         'LossInd {ind_loss.avg:.3f}\t'
+                         'AccInd {acces.avg:.3f}\t'
+                         'Prec@1 {top1.avg:.3f}\t'
+                         'Prec@5 {top5.avg:.3f}'.format(
+                             epoch, args.epochs, i, len(train_loader), batch_time=batch_time, data_time=data_time, loss=losses, ind_loss=ind_losses, acces=acces,
                              top1=top1, top5=top5, lr=optimizer.param_groups[-1]['lr'])))  # TODO
             
     return losses.avg, top1.avg, top5.avg
@@ -363,11 +367,11 @@ def validate(val_loader, model, criterion, logger=None):
             if (i % args.print_freq == 0 and i != 0) or i == len(val_loader):
                 logger.info(
                     ('Test: [{0}/{1}]\t'
-                     'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                     'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                     'Loss_ind {ind_loss.val:.4f} ({ind_loss.avg:.4f})\t'
-                     'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                     'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
+                     'Time  {batch_time.avg:.3f}\t'
+                     'Loss  {loss.avg:.4f}\t'
+                     'Loss_ind {ind_loss.avg:.4f}\t'
+                     'Prec@1 {top1.avg:.3f}\t'
+                     'Prec@5 {top5.avg:.3f}'.format(
                          i, len(val_loader), batch_time=batch_time, loss=losses, ind_loss=ind_losses, top1=top1, top5=top5)))
     logger.info(('Testing Results: Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f} Loss {loss.avg:.5f}'
                  .format(top1=top1, top5=top5, loss=losses)))
@@ -422,6 +426,12 @@ def init_wandb(exp_name, cfg, resume):
         config=cfg.__dict__,  # 本次实验的配置说明（可选）
         resume= resume
     )
+
+def get_acc(input, label):
+    acces = (1 - (input.detach() - label.detach()).abs()
+               ).sum(0) / args.batch_size
+    acc = acces.sum(0) / acces.shape[0]
+    return acc
 
 if __name__ == '__main__':
     main()
