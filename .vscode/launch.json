@@ -14,7 +14,7 @@
                 "--nproc_per_node=1",
                 "./train.py",
                 "-b",
-                "8",
+                "1",
                 "--workers",
                 "1"
             ],

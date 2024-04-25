@@ -13,7 +13,7 @@ parser.add_argument('--val_list', type=str, default="")
 parser.add_argument('--root_path', type=str, default="")
 parser.add_argument('--store_name', type=str, default="")
 # ========================= Model Configs ==========================
-parser.add_argument('--arch', type=str, default="resnet50")
+parser.add_argument('--arch', type=str, default="swin")
 parser.add_argument('--num_segments', type=int, default=9)
 parser.add_argument('--consensus_type', type=str, default='avg')
 parser.add_argument('--length', type=int, default=1)
@@ -21,7 +21,7 @@ parser.add_argument('--img_step', type=int, default=1)
 parser.add_argument('--dropout', default=0, type=float, metavar='DO',
                     help='dropout ratio (default: 0.5)')
 parser.add_argument('--loss_type', type=str, default="nll", choices=['nll'])
-parser.add_argument('--img_feature_dim', default=672, type=int,
+parser.add_argument('--img_feature_dim', default=768, type=int,
                     help="the feature dimension for each frame")
 parser.add_argument('--suffix', type=str, default=None)
 parser.add_argument('--pretrain', type=bool, default=True)
@@ -31,31 +31,31 @@ parser.add_argument('--experiment_name', type=str, default='FLN')
 # ========================= Learning Configs ==========================
 parser.add_argument('--epochs', default=500, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('--optimizer', default='SGD', type=str)
-parser.add_argument('-b', '--batch-size', default=28, type=int, metavar='N',
+parser.add_argument('--optimizer', default='AdamW', type=str)
+parser.add_argument('-b', '--batch-size', default=12, type=int, metavar='N',
                     help='mini-batch size (default: 256)')
-parser.add_argument('--lr_scheduler', type=str, default='reduce')
-parser.add_argument('--warmup_epoch', type=int, default=0)
-parser.add_argument('--lr_decay_rate', type=float, default=0.5)
-parser.add_argument('--warmup_multiplier', type=int, default=1)
-parser.add_argument('--lr', '--learning-rate', default=0.1, type=float, metavar='LR',
+parser.add_argument('--lr_scheduler', type=str, default='cosine')
+parser.add_argument('--warmup_epoch', type=int, default=20)
+parser.add_argument('--lr_decay_rate', type=float, default=0.1)
+parser.add_argument('--warmup_multiplier', type=int, default=5)
+parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float, metavar='LR',
                     help='initial learning rate')
 parser.add_argument('--lr_steps', default=[150, 350 ], type=float, nargs="+", metavar='LRSteps',
                     help='epochs to decay learning rate by 10')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
-parser.add_argument('--weight-decay', '--wd', default=5e-4, type=float, metavar='W',
+parser.add_argument('--weight-decay', '--wd', default=5e-2, type=float, metavar='W',
                     help='weight decay (default: 5e-4)')
-parser.add_argument('--clip-gradient', '--gd', default=None, type=float, metavar='W',
+parser.add_argument('--clip-gradient', '--gd', default=5, type=float, metavar='W',
                     help='gradient norm clipping (default: disabled)')
 parser.add_argument('--no_partialbn', '--npb', default=True, action="store_true")
 # ========================= Monitor Configs ==========================
-parser.add_argument('--print-freq', '-p', default=100, type=int, metavar='N',
+parser.add_argument('--print-freq', '-p', default=200, type=int, metavar='N',
                     help='print frequency (default: 10)')
 parser.add_argument('--eval-freq', default=5, type=int, metavar='N',
                     help='evaluation frequency (default: 5)')
 # ========================= Runtime Configs ==========================
-parser.add_argument('-j', '--workers', default=15, type=int, metavar='N',
+parser.add_argument('-j', '--workers', default=10, type=int, metavar='N',
                     help='number of data loading workers (default: 8)')
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')

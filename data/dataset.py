@@ -195,7 +195,9 @@ class TSNDataSet(data.Dataset):
                 segment_indices = self._sample_indices(video_list) 
             else:
                 segment_indices = self._sample_indices(video_list) if self.random_shift else self._get_val_indices(video_list) 
-            np.random.shuffle(segment_indices)
+            # np.random.shuffle(segment_indices)
+            # segment_indices = np.random.randint(low=1, high=len(video_list), size=self.num_segments)
+            # segment_indices = np.sort(segment_indices)
         else:
             if self.dataset == 'kinetics':
                 segment_indices = self._sample_indices(video_list)

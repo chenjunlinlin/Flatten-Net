@@ -27,6 +27,7 @@ import torchvision
 from datetime import datetime
 import wandb
 import warnings
+from model.resnet import set_parameter_requires_grad
 
 warnings.filterwarnings("ignore")
 
@@ -152,6 +153,9 @@ def main():
     elif args.optimizer == "Adam":
         optimizer = torch.optim.Adam(model.parameters(), args.lr,
                                     weight_decay=args.weight_decay)
+    elif args.optimizer == "AdamW":
+        optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr,
+                                    weight_decay=args.weight_decay)
 
     scheduler = get_scheduler(optimizer, len(train_loader), args)
 
@@ -229,6 +233,10 @@ def main():
                     "epoch": epoch
                 })
 
+        # if epoch > 2:
+        #     model1 = model.module
+        #     set_parameter_requires_grad(model1, freezing=False)
+
         if (epoch + 1) % args.eval_freq == 0 or epoch == args.epochs - 1:
             val_loader.sampler.set_epoch(epoch)
             prec1, prec5, val_loss = validate(
@@ -264,7 +272,7 @@ def main():
     wandb.finish()
     dist.destroy_process_group()
 
-def train(train_loader, model, criterion, optimizer, epoch, latest_loss, beta=250, logger=None, scheduler=None):
+def train(train_loader, model, criterion, optimizer, epoch, latest_loss, beta=0, logger=None, scheduler=None):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -288,10 +296,16 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, beta=25
         target_var = target
         output, ind_output = model(input_var)
         class_loss = criterion[0](output, target_var)
-        ind_loss = criterion[1](ind_output, ind_label) * beta / args.num_segments
+        if ind_output is not None:
+            ind_loss = criterion[1](ind_output, ind_label) * beta / args.num_segments
+        else:
+            ind_loss = torch.tensor(0).cuda()
         loss = class_loss + ind_loss
         prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
-        acc = get_acc(ind_output, ind_label)
+        if ind_output is not None:
+            acc = get_acc(ind_output, ind_label)
+        else:
+            acc = torch.tensor(0)
 
         losses.update(loss.item(), input.size(0))
         top1.update(prec1.item(), input.size(0))
@@ -308,10 +322,10 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, beta=25
             clip_grad_norm_(model.parameters(), args.clip_gradient)
 
         optimizer.step()
-        # if args.lr_scheduler == "reduce" and "SGD" in str(type(optimizer)):
-        #     scheduler.step(metrics=latest_loss)
-        # else:
-        #     scheduler.step()
+        if args.lr_scheduler == "reduce" and "SGD" in str(type(optimizer)):
+            scheduler.step(metrics=latest_loss)
+        else:
+            scheduler.step()
         batch_time.update(time.time() - end)
         end = time.time()
         
@@ -347,12 +361,15 @@ def validate(val_loader, model, criterion, logger=None):
             target = target.cuda()
             ind_label = ind_label.cuda()
             output, ind_output = model(input)
-            ind_loss = criterion[1](ind_output, ind_label)
+            if ind_output is not None:
+                ind_loss = criterion[1](ind_output, ind_label)
+            else:
+                ind_loss = torch.tensor(0).cuda()
             loss = criterion[0](output, target) + ind_loss
             prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
 
             loss = reduce_tensor(loss)
-            ind_loss = reduce_tensor(ind_loss)
+            # ind_loss = reduce_tensor(ind_loss)
             prec1 = reduce_tensor(prec1)
             prec5 = reduce_tensor(prec5)
 

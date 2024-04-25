@@ -6,6 +6,7 @@ from .resnet import get_resnet_model
 from .build_model import get_swin
 from einops import rearrange
 from opts.basic_ops import ConsensusModule
+from .resnet_nonlocal import ResNet_NonLocal
 
 
 class FLN(nn.Module):
@@ -48,25 +49,26 @@ class FLN(nn.Module):
 
         self._prepare_base_model(base_model, self.num_segments, logger)
         self.consensus = ConsensusModule(consensus_type)
-        in_features = self.base_model.fc.in_features
-        self.base_model.fc = nn.Identity()
-        self.class_head = nn.Linear(in_features=in_features,
-                                     out_features=self.num_classes)
+        if 'resnet' in self.base_model_name:
+            in_features = self.base_model.fc.in_features
+            self.base_model.fc = nn.Identity()
+            self.class_head = nn.Linear(in_features=in_features,
+                                        out_features=self.num_classes)
 
-        self.ind_head = nn.Sequential(
-            nn.Linear(in_features=in_features, out_features=512),
-            nn.Linear(in_features=512, out_features=self.num_segments)
-        )
-        nn.Linear(in_features=in_features,
-                                   out_features=num_segments)
+            self.ind_head = nn.Sequential(
+                nn.Linear(in_features=in_features, out_features=512),
+                nn.Linear(in_features=512, out_features=self.num_segments)
+            )
 
 
     def _prepare_base_model(self, base_model, num_segments, logger):
         print(('=> base model: {}'.format(base_model)))
-        if 'resnet' in base_model:
+        if 'resnet' in base_model or 'swin' in base_model:
             self.base_model = self._get_model(model_name=self.base_model_name, logger=logger)
-            self.base_model.last_layer_name = 'fc'
-            self.input_size = [224, 224]  # w * h
+            # self.base_model = ResNet_NonLocal(temp)
+            if 'resnet' in base_model:
+                self.base_model.last_layer_name = 'fc'
+            self.input_size = [255, 255]  # w * h
             self.input_mean = [0.485, 0.456, 0.406]
             self.input_std = [0.229, 0.224, 0.225]
         else:
@@ -75,7 +77,7 @@ class FLN(nn.Module):
     def _get_model(self, model_name='resnet50', logger=None):
         if 'swin' in model_name:
             model = get_swin(
-                img_size=self.img_feature_dim, num_classes=self.num_classes, logger=logger)
+                img_size=self.img_feature_dim, num_classes=self.num_classes, pretrain=False, logger=logger)
         else:
             model = get_resnet_model(
                 num_classes=self.num_classes, pretrained=self.pretrain, progress=True, model_name=self.base_model_name)
@@ -91,16 +93,22 @@ class FLN(nn.Module):
 
         base_out = self.base_model(input)
 
-        if self.dropout > 0:
-            base_out = nn.Dropout(self.dropout)(base_out)
-        class_out = self.class_head(base_out)
-        class_out = nn.Softmax()(class_out)
+        if 'resnet' in self.base_model_name:
+            if self.dropout > 0:
+                base_out = nn.Dropout(self.dropout)(base_out)
+            class_out = self.class_head(base_out)
+            class_out = nn.Softmax()(class_out)
+            
+            ind_out = self.ind_head(base_out)
+            ind_out = nn.Sigmoid()(ind_out)
+
+        elif 'swin' in self.base_model_name:
+            class_out = nn.Softmax()(base_out)
+            ind_out = None
+
         class_out = rearrange(class_out, "(B S) C -> B S C", B=B, S=S)
         output = self.consensus(class_out)
         output = torch.squeeze(output, dim=1)
-
-        ind_out = self.ind_head(base_out)
-        ind_out = nn.Sigmoid()(ind_out)
 
         return output, ind_out
 
