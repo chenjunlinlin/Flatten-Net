@@ -94,7 +94,7 @@ def load_swin_pretrained(PRETRAINED_PATH, model, logger):
 
 
 def get_swin(img_size, num_classes, pretrain=True, logger=None):
-    model = SwinTransformerV2(img_size=img_size, window_size=8, num_classes=num_classes)
+    model = SwinTransformerV2(img_size=img_size, window_size=8, num_classes=num_classes, drop_path_rate=0.2)
     if pretrain:
         load_swin_pretrained(PRETRAINED_PATH="./checkpoint/pretrained/swinv2_tiny_patch4_window8_256.pth", model=model, logger=logger)
 

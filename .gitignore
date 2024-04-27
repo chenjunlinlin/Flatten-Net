@@ -6,3 +6,4 @@ wandb/
 debuger.py
 test.ipynb
 .vscode
+*.pyc
