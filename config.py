@@ -35,10 +35,10 @@ parser.add_argument('--optimizer', default='AdamW', type=str)
 parser.add_argument('-b', '--batch-size', default=8, type=int, metavar='N',
                     help='mini-batch size (default: 256)')
 parser.add_argument('--lr_scheduler', type=str, default='cosine')
-parser.add_argument('--warmup_epoch', type=int, default=40)
+parser.add_argument('--warmup_epoch', type=int, default=30)
 parser.add_argument('--lr_decay_rate', type=float, default=0.1)
 parser.add_argument('--warmup_multiplier', type=int, default=1000)
-parser.add_argument('--lr', '--learning-rate', default=1e-7, type=float, metavar='LR',
+parser.add_argument('--lr', '--learning-rate', default=1.5e-7, type=float, metavar='LR',
                     help='initial learning rate')
 parser.add_argument('--lr_steps', default=[150, 350 ], type=float, nargs="+", metavar='LRSteps',
                     help='epochs to decay learning rate by 10')

@@ -28,6 +28,7 @@ from datetime import datetime
 import wandb
 import warnings
 from model.resnet import set_parameter_requires_grad
+from model.LabelSmoothing import LSR
 
 warnings.filterwarnings("ignore")
 
@@ -141,7 +142,7 @@ def main():
     # define loss function (criterion) and optimizer
     criterion = list()
     if args.loss_type == 'nll':
-        criterion.append(torch.nn.CrossEntropyLoss().cuda())
+        criterion.append(LSR().cuda())
         criterion.append(torch.nn.MSELoss().cuda())
     else:
         raise ValueError("Unknown loss type")
