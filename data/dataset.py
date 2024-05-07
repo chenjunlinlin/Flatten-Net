@@ -72,7 +72,7 @@ class TSNDataSet(data.Dataset):
             if not self.test_mode or self.remove_missing:
                 tmp = [item for item in tmp if int(item[1]) >= self.new_length + self.num_segments - 1]
         self.videos_list = [VideoRecord(item) for item in tmp]
-
+     
         if self.image_tmpl == '{:06d}-{}_{:05d}.jpg':
             for v in self.video_list:
                 v._data[1] = int(v._data[1]) / 2
@@ -168,26 +168,29 @@ class TSNDataSet(data.Dataset):
 
     def __getitem__(self, index):
         record = self.videos_list[index]
-        decode_boo = False
-        video_list = os.listdir(record.path)
+        # decode_boo = False
+        # video_list = os.listdir(record.path)
 
         
-        # if('something' in self.dataset): 
-        #     decode_boo = False
-        #     video_list = os.listdir(record.path)
+        if('something' in self.dataset) or ("hmdb51" in self.dataset): 
+            decode_boo = False
+            video_list = os.listdir(self.root_path + record.path)
         
-        # else:
-        #     decode_boo = True
-        #     try:
-        #         directory = record.path
-        #         if directory[-4:] != ".mp4":
-        #             video_path = directory+".mp4"
-        #         else:
-        #             video_path = directory
-        #         video_list = decord.VideoReader(video_path)
-        #     except UnicodeDecodeError:
-        #         decode_boo = False
-        #         video_list = os.listdir(record.path)
+        else:
+            decode_boo = True
+            try:
+                directory = self.root_path + record.path
+                # if directory[-4:] != ".mp4":
+                #     video_path = directory+".mp4"
+                # else:
+                #     video_path = directory
+                video_list = decord.VideoReader(directory)
+            except Exception:
+                print('*'*30)
+                print(f"video: {directory} fail to load!!!")
+                print('*'*30)
+                decode_boo = False
+                video_list = os.listdir(record.path)
         
         
         if not self.test_mode:
@@ -204,8 +207,9 @@ class TSNDataSet(data.Dataset):
             else:
                 segment_indices = self._get_test_indices(video_list)
 
-        
-        return self.get(record,video_list, segment_indices,decode_boo)
+        process_data, record_label, ind_label = self.get(record,video_list, segment_indices,decode_boo)
+
+        return process_data, record_label, ind_label
 
     def get(self, record,video_list, indices,decode_boo):
         images = list()

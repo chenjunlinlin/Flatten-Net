@@ -47,7 +47,7 @@ def main():
     num_class, args.train_list, args.val_list, args.root_path, prefix = dataset_config.return_dataset(
         args.dataset, args.modality)
     full_arch_name = args.arch
-    args.store_name = '_'.join(['segment%d'%args.num_segments,
+    args.store_name = '_'.join([args.dataset, 'segment%d'%args.num_segments,
                                 'length%d'%args.length, 'step%d'%args.img_step, full_arch_name, args.consensus_type,  'e{}'.format(args.epochs)])
     if args.pretrain != 'imagenet':
         args.store_name += '_{}'.format(args.pretrain)
@@ -78,7 +78,7 @@ def main():
                 logger=logger)
     
     if dist.get_rank() == 0:
-        init_wandb(args.store_name, cfg=args, resume= (True if args.resume is not None else False))
+        init_wandb(args.store_name, cfg=args, resume=False)
         wandb.watch(model, log='all', log_freq=100, log_graph=False)
 
     
@@ -142,7 +142,7 @@ def main():
     # define loss function (criterion) and optimizer
     criterion = list()
     if args.loss_type == 'nll':
-        criterion.append(LSR().cuda())
+        criterion.append(torch.nn.CrossEntropyLoss(label_smoothing=0.2).cuda())
         criterion.append(torch.nn.MSELoss().cuda())
     else:
         raise ValueError("Unknown loss type")
@@ -331,7 +331,7 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, beta=0,
         end = time.time()
         
         if (i % args.print_freq == 0 and i != 0) or i == len(train_loader)-1:
-            logger.info(('Epoch: [{0}/{1}][{2}/{3}],\t lr: {lr:.6f}\t'
+            logger.info(('Epoch: [{0}/{1}][{2}/{3}],\t lr: {lr:.7f}\t'
                          'Time {batch_time.avg:.3f}\t'
                          'Data {data_time.avg:.3f}\t'
                          'Loss {loss.avg:.3f}\t'

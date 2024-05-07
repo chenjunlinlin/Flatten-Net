@@ -26,9 +26,9 @@ def return_ucf101(modality):
 def return_hmdb51(modality):
     filename_categories = 51
     if modality == 'RGB':
-        root_data = ""
-        filename_imglist_train = "./dataset/HMDB51/train.csv"
-        filename_imglist_val = "./dataset/HMDB51/test.csv"
+        root_data = "./dataset/HMDB51/video_imgs/"
+        filename_imglist_train = "./dataset/HMDB51/train_off.csv"
+        filename_imglist_val = "./dataset/HMDB51/val_off.csv"
         prefix = 'image_{:05d}.jpg'
     elif modality == 'Flow':
         root_data = ROOT_DATASET + 'HMDB51/images'
@@ -90,9 +90,9 @@ def return_jester(modality):
 def return_kinetics(modality):
     filename_categories = 400
     if modality == 'RGB':
-        root_data = "/"
-        filename_imglist_train = "/your_path_to/list_kinetics-400/train.csv"
-        filename_imglist_val = "/your_path_to/list_kinetics-400/val.csv"
+        root_data = "./dataset/kinetics400/"
+        filename_imglist_train = "dataset/kinetics400/trainlist.csv"
+        filename_imglist_val = "dataset/kinetics400/vallist.csv"
         prefix = 'image_{:05d}.jpg'
     else:
         raise NotImplementedError('no such modality:' + modality)

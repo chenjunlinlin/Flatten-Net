@@ -93,9 +93,17 @@ def load_swin_pretrained(PRETRAINED_PATH, model, logger):
     torch.cuda.empty_cache()
 
 
-def get_swin(img_size, num_classes, pretrain=True, logger=None):
-    model = SwinTransformerV2(img_size=img_size, window_size=8, num_classes=num_classes, drop_path_rate=0.2)
+def get_swin(img_size, model_name, num_classes, pretrain=True, logger=None):
+    if "swin-t" in model_name:
+        DEPTHS = [ 2, 2, 6, 2 ]
+        NUM_HEADS = [ 3, 6, 12, 24 ]
+        PRETRAINED_PATH = "./checkpoint/pretrained/swinv2_tiny_patch4_window16_256.pth"
+    elif "swin-s" in model_name:
+        DEPTHS = [ 2, 2, 18, 2 ]
+        NUM_HEADS =  [ 3, 6, 12, 24 ]
+        PRETRAINED_PATH = "./checkpoint/pretrained/swinv2_small_patch4_window16_256.pth"
+    model = SwinTransformerV2(img_size=img_size, depths=DEPTHS, num_heads=NUM_HEADS, window_size=16, num_classes=num_classes, drop_path_rate=0.3, ape=True)
     if pretrain:
-        load_swin_pretrained(PRETRAINED_PATH="./checkpoint/pretrained/swinv2_tiny_patch4_window8_256.pth", model=model, logger=logger)
+        load_swin_pretrained(PRETRAINED_PATH=PRETRAINED_PATH, model=model, logger=logger)
 
     return model

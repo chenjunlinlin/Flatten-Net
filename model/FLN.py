@@ -77,7 +77,7 @@ class FLN(nn.Module):
     def _get_model(self, model_name='resnet50', logger=None):
         if 'swin' in model_name:
             model = get_swin(
-                img_size=self.img_feature_dim, num_classes=self.num_classes, pretrain=self.pretrain, logger=logger)
+                model_name=model_name, img_size=self.img_feature_dim, num_classes=self.num_classes, pretrain=self.pretrain, logger=logger)
         else:
             model = get_resnet_model(
                 num_classes=self.num_classes, pretrained=self.pretrain, progress=True, model_name=self.base_model_name)
