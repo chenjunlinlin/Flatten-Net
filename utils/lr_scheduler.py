@@ -11,7 +11,7 @@ def get_scheduler(optimizer, n_iter_per_epoch, args):
     if "cosine" in args.lr_scheduler:
         scheduler = CosineAnnealingLR(
             optimizer=optimizer,
-            eta_min=5e-7,
+            eta_min=5e-6,
             T_max=(args.epochs - args.warmup_epoch) * n_iter_per_epoch)
     elif "step" in args.lr_scheduler:
         scheduler = MultiStepLR(

@@ -102,11 +102,7 @@ def get_swin(img_size, model_name, num_classes, pretrain=True, logger=None):
         DEPTHS = [ 2, 2, 18, 2 ]
         NUM_HEADS =  [ 3, 6, 12, 24 ]
         PRETRAINED_PATH = "./checkpoint/pretrained/swinv2_small_patch4_window16_256.pth"
-    elif "swin-b" in model_name:
-        DEPTHS = [ 2, 2, 18, 2 ]
-        NUM_HEADS =  [ 4, 8, 16, 32 ]
-        PRETRAINED_PATH = "checkpoint/pretrained/swinv2_base_patch4_window16_256.pth"
-    model = SwinTransformerV2(img_size=img_size, depths=DEPTHS, num_heads=NUM_HEADS, window_size=16, num_classes=num_classes, drop_path_rate=0.1, ape=True)
+    model = SwinTransformerV2(img_size=img_size, depths=DEPTHS, num_heads=NUM_HEADS, window_size=16, num_classes=num_classes, drop_path_rate=0.1)
     if pretrain:
         load_swin_pretrained(PRETRAINED_PATH=PRETRAINED_PATH, model=model, logger=logger)
 

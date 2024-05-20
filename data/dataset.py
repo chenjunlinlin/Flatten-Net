@@ -49,7 +49,7 @@ class TSNDataSet(data.Dataset):
         self.dataset = dataset
         self.img_step = img_step
         self.remove_missing = remove_missing
-        self.I3D_sample = False  # using dense sample as I3D
+        self.I3D_sample = True  # using dense sample as I3D
         self.dense_sample = dense_sample  # using dense sample as I3D
         self.twice_sample = twice_sample  # twice sample for more validation
         if self.dense_sample:
@@ -113,22 +113,14 @@ class TSNDataSet(data.Dataset):
             start_idx2 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
             start_idx3 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
             start_idx4 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
-            start_idx5 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
-            start_idx6 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
-            start_idx7 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
-            start_idx8 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
-            start_idx9 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
-            start_idx10 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
-            offsets = [(idx * t_stride + start_idx1) % len(video_list) for idx in range(self.num_segments)]
-            +[(idx * t_stride + start_idx2) % len(video_list) for idx in range(self.num_segments)]
-            +[(idx * t_stride + start_idx3) % len(video_list) for idx in range(self.num_segments)]
-            +[(idx * t_stride + start_idx4) % len(video_list) for idx in range(self.num_segments)]
-            +[(idx * t_stride + start_idx5) % len(video_list) for idx in range(self.num_segments)]
-            +[(idx * t_stride + start_idx6) % len(video_list) for idx in range(self.num_segments)]
-            +[(idx * t_stride + start_idx7) % len(video_list) for idx in range(self.num_segments)]
-            +[(idx * t_stride + start_idx8) % len(video_list) for idx in range(self.num_segments)]
-            +[(idx * t_stride + start_idx9) % len(video_list) for idx in range(self.num_segments)]
-            +[(idx * t_stride + start_idx10) % len(video_list) for idx in range(self.num_segments)]
+            # start_idx5 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
+            # start_idx6 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
+            # start_idx7 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
+            # start_idx8 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
+            # start_idx9 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
+            # start_idx10 = 0 if sample_pos == 1 else np.random.randint(0, sample_pos - 1)
+            offsets = [(idx * t_stride + start_idx1) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx2) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx3) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx4) % len(video_list) for idx in range(self.num_segments)]
+            # +[(idx * t_stride + start_idx5) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx6) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx7) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx8) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx9) % len(video_list) for idx in range(self.num_segments)]+[(idx * t_stride + start_idx10) % len(video_list) for idx in range(self.num_segments)]
             return np.array(offsets) + 1
 
 
@@ -195,7 +187,7 @@ class TSNDataSet(data.Dataset):
         
         if not self.test_mode:
             if self.I3D_sample :
-                segment_indices = self._sample_indices(video_list) 
+                segment_indices = self._sample_indices(video_list)
             else:
                 segment_indices = self._sample_indices(video_list) if self.random_shift else self._get_val_indices(video_list) 
             # np.random.shuffle(segment_indices)

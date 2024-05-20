@@ -108,7 +108,7 @@ def main():
                                                   ToTorchFormatTensor(
                                                       div=True),
                                                   normalize,
-                                                 Flatten([args.img_feature_dim,args.img_feature_dim], length=16)]),
+                                                 Flatten([args.img_feature_dim,args.img_feature_dim], length=9)]),
         dense_sample=args.dense_sample)
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(
@@ -131,8 +131,8 @@ def main():
         test_mode=True,
         transform=torchvision.transforms.Compose([
             GroupScale(scale_size), GroupCenterCrop(crop_size),
-            ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim,args.img_feature_dim], length=16)]),
-        dense_sample=args.dense_sample)
+            ToTorchFormatTensor(div=True),normalize,Flatten([args.img_feature_dim,args.img_feature_dim], length=9)]),
+        dense_sample=True)
 
     val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset)
     val_loader = torch.utils.data.DataLoader(val_dataset,
@@ -142,7 +142,7 @@ def main():
     # define loss function (criterion) and optimizer
     criterion = list()
     if args.loss_type == 'nll':
-        criterion.append(torch.nn.CrossEntropyLoss(label_smoothing=0.2).cuda())
+        criterion.append(torch.nn.CrossEntropyLoss().cuda())
         criterion.append(torch.nn.MSELoss().cuda())
     else:
         raise ValueError("Unknown loss type")
@@ -223,7 +223,7 @@ def main():
     for epoch in range(args.start_epoch, args.epochs):
         train_loader.sampler.set_epoch(epoch)
         train_loss, train_top1, train_top5 = train(
-            train_loader, model, criterion, optimizer, epoch=epoch, latest_loss=latest_loss, logger=logger, scheduler=scheduler)
+            train_loader, model, criterion, optimizer, epoch=epoch, latest_loss=latest_loss, logger=logger, scheduler=scheduler, accumulation_steps=args.accumulation_steps)
         latest_loss = train_loss
         if dist.get_rank() == 0:
             wandb.log({
@@ -273,7 +273,7 @@ def main():
     wandb.finish()
     dist.destroy_process_group()
 
-def train(train_loader, model, criterion, optimizer, epoch, latest_loss, beta=0, logger=None, scheduler=None):
+def train(train_loader, model, criterion, optimizer, epoch, latest_loss, beta=0, accumulation_steps=10, logger=None, scheduler=None):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -315,14 +315,20 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, beta=0,
         ind_losses.update(ind_loss.item(), input.size(0))
         acces.update(acc.item(), input.size(0))
 
-        optimizer.zero_grad()
 
+        loss = loss / accumulation_steps
         loss.backward()
 
         if args.clip_gradient is not None:
             clip_grad_norm_(model.parameters(), args.clip_gradient)
 
-        optimizer.step()
+        if (i+1)%accumulation_steps == 0:
+            optimizer.step()
+            optimizer.zero_grad()
+        elif (i+1)%len(train_loader) == 0:
+            optimizer.step()
+            optimizer.zero_grad()
+
         if args.lr_scheduler == "reduce" and "SGD" in str(type(optimizer)):
             scheduler.step(metrics=latest_loss)
         else:
@@ -331,7 +337,7 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, beta=0,
         end = time.time()
         
         if (i % args.print_freq == 0 and i != 0) or i == len(train_loader)-1:
-            logger.info(('Epoch: [{0}/{1}][{2}/{3}],\t lr: {lr:.7f}\t'
+            logger.info(('Epoch: [{0}/{1}][{2}/{3}], lr: {lr:.2e}\t'
                          'Time {batch_time.avg:.3f}\t'
                          'Data {data_time.avg:.3f}\t'
                          'Loss {loss.avg:.3f}\t'
@@ -343,7 +349,6 @@ def train(train_loader, model, criterion, optimizer, epoch, latest_loss, beta=0,
                              top1=top1, top5=top5, lr=optimizer.param_groups[-1]['lr'])))  # TODO
             
     return losses.avg, top1.avg, top5.avg
-
 
 
 def validate(val_loader, model, criterion, logger=None):

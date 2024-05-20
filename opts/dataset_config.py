@@ -26,9 +26,9 @@ def return_ucf101(modality):
 def return_hmdb51(modality):
     filename_categories = 51
     if modality == 'RGB':
-        root_data = "./dataset/HMDB51/video_imgs/"
-        filename_imglist_train = "./dataset/HMDB51/train_off.csv"
-        filename_imglist_val = "./dataset/HMDB51/val_off.csv"
+        root_data = ""
+        filename_imglist_train = "./dataset/HMDB51/train.csv"
+        filename_imglist_val = "./dataset/HMDB51/test.csv"
         prefix = 'image_{:05d}.jpg'
     elif modality == 'Flow':
         root_data = ROOT_DATASET + 'HMDB51/images'
